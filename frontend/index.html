@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Study Desk — OS & DBMS Assistant</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="page">
+  <header class="page-header">
+    <div class="spine">
+      <span class="spine-label">Study Desk</span>
+    </div>
+    <h1>Ask your notes anything</h1>
+    <p class="subtitle">Answers pulled only from your OS &amp; DBMS lecture slides — nothing invented.</p>
+  </header>
+
+  <div class="subject-filter" id="subjectFilter">
+    <button class="chip chip-all active" data-subject="all">All subjects</button>
+    <button class="chip chip-os" data-subject="os">Operating Systems</button>
+    <button class="chip chip-dbms" data-subject="dbms">DBMS</button>
+    <button class="clear-chip" id="clearChatBtn">Clear chat</button>
+    <button class="chip chip-networks" data-subject="networks">Networks</button>
+  </div>
+
+  <main class="chat-area" id="chatArea">
+    <div class="empty-state" id="emptyState">
+      <p>No questions yet. Try asking something like:</p>
+      <div class="suggestions">
+        <button class="suggestion-btn">What is a process?</button>
+        <button class="suggestion-btn">What is normalization?</button>
+        <button class="suggestion-btn">Explain process creation</button>
+      </div>
+    </div>
+  </main>
+
+  <form class="input-bar" id="chatForm">
+    <input
+      type="text"
+      id="questionInput"
+      placeholder="Ask about OS or DBMS..."
+      autocomplete="off"
+      required
+    />
+    <button type="submit" id="sendBtn">
+      <span class="btn-text">Ask</span>
+    </button>
+  </form>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
