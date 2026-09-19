@@ -1,4 +1,4 @@
-const API_URL = "http://127.0.0.1:8000/ask";
+const API_URL = "https://study-desk-rag-api.onrender.com/ask";
 
 const chatArea = document.getElementById("chatArea");
 const emptyState = document.getElementById("emptyState");
