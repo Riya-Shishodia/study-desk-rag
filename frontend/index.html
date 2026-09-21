@@ -10,46 +10,72 @@
 </head>
 <body>
 
-<div class="page">
-  <header class="page-header">
-    <div class="spine">
-      <span class="spine-label">Study Desk</span>
-    </div>
-    <h1>Ask your notes anything</h1>
-    <p class="subtitle">Answers pulled only from your OS &amp; DBMS lecture slides — nothing invented.</p>
-  </header>
+<div class="app-shell">
 
-  <div class="subject-filter" id="subjectFilter">
-    <button class="chip chip-all active" data-subject="all">All subjects</button>
-    <button class="chip chip-os" data-subject="os">Operating Systems</button>
-    <button class="chip chip-dbms" data-subject="dbms">DBMS</button>
-    <button class="clear-chip" id="clearChatBtn">Clear chat</button>
-    <button class="chip chip-networks" data-subject="networks">Networks</button>
+  <aside class="sidebar" id="sidebar">
+    <button class="new-chat-btn" id="newChatBtn">
+      <span>+ New chat</span>
+    </button>
+    <div class="conversation-list" id="conversationList">
+      <!-- conversation items get inserted here by script.js -->
+    </div>
+  </aside>
+
+  <button class="sidebar-toggle" id="sidebarToggle" aria-label="Toggle sidebar">☰</button>
+
+  <div class="page">
+    <header class="page-header">
+      <div class="spine">
+        <span class="spine-label">Study Desk</span>
+      </div>
+      <h1>Ask your notes anything</h1>
+      <p class="subtitle">Answers pulled only from your OS &amp; DBMS lecture slides — nothing invented.</p>
+    </header>
+
+    <div class="subject-filter" id="subjectFilter">
+      <button class="chip chip-all active" data-subject="all">All subjects</button>
+      <button class="chip chip-os" data-subject="os">Operating Systems</button>
+      <button class="chip chip-dbms" data-subject="dbms">DBMS</button>
+    </div>
+        <div class="upload-section" id="uploadSection">
+      <button class="upload-toggle" id="uploadToggle">+ Add lecture notes</button>
+      <form class="upload-form" id="uploadForm" style="display:none;">
+        <input type="file" id="pdfFileInput" accept="application/pdf" required />
+        <select id="uploadSubject" required>
+          <option value="" disabled selected>Subject</option>
+          <option value="os">Operating Systems</option>
+          <option value="dbms">DBMS</option>
+        </select>
+        <button type="submit" id="uploadSubmitBtn">Upload</button>
+      </form>
+      <div class="upload-status" id="uploadStatus"></div>
+    </div>
+
+    <main class="chat-area" id="chatArea">
+      <div class="empty-state" id="emptyState">
+        <p>No questions yet. Try asking something like:</p>
+        <div class="suggestions">
+          <button class="suggestion-btn">What is a process?</button>
+          <button class="suggestion-btn">What is normalization?</button>
+          <button class="suggestion-btn">Explain process creation</button>
+        </div>
+      </div>
+    </main>
+
+    <form class="input-bar" id="chatForm">
+      <input
+        type="text"
+        id="questionInput"
+        placeholder="Ask about OS or DBMS..."
+        autocomplete="off"
+        required
+      />
+      <button type="submit" id="sendBtn">
+        <span class="btn-text">Ask</span>
+      </button>
+    </form>
   </div>
 
-  <main class="chat-area" id="chatArea">
-    <div class="empty-state" id="emptyState">
-      <p>No questions yet. Try asking something like:</p>
-      <div class="suggestions">
-        <button class="suggestion-btn">What is a process?</button>
-        <button class="suggestion-btn">What is normalization?</button>
-        <button class="suggestion-btn">Explain process creation</button>
-      </div>
-    </div>
-  </main>
-
-  <form class="input-bar" id="chatForm">
-    <input
-      type="text"
-      id="questionInput"
-      placeholder="Ask about OS or DBMS..."
-      autocomplete="off"
-      required
-    />
-    <button type="submit" id="sendBtn">
-      <span class="btn-text">Ask</span>
-    </button>
-  </form>
 </div>
 
 <script src="script.js"></script>
