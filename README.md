@@ -12,15 +12,17 @@ A full-stack Retrieval-Augmented Generation (RAG) web application that lets stud
 - Answers questions using only the content of uploaded lecture PDFs — no hallucinated answers from general LLM knowledge
 - Every answer includes the source file(s) it was pulled from
 - Subject-based filtering (e.g., restrict search to OS-only or DBMS-only content)
-- Persistent chat history (per-browser, via localStorage)
-- New lecture PDFs can be added and indexed incrementally, without re-processing existing documents
+- **Sidebar with multiple saved conversations** — start new chats, revisit past ones, delete any you don't need, similar to a typical AI chat interface
+- **Upload lecture PDFs directly from the interface**, no manual script required — the file is extracted, chunked, embedded, and made searchable immediately
+- New lecture PDFs can also be added and indexed incrementally via script, without re-processing existing documents
+- Batched embedding calls (one API call per PDF instead of one per chunk) for faster processing
 - Automatic retry handling for transient LLM API failures
 
 ## How it works
 
 1. **Extraction** — lecture PDFs are parsed and their text extracted (`pypdf`)
 2. **Chunking** — extracted text is split into overlapping chunks to preserve context across boundaries
-3. **Embedding** — each chunk is converted into a vector using Google's Gemini Embeddings API
+3. **Embedding** — chunks are converted into vectors using Google's Gemini Embeddings API, batched into as few API calls as possible
 4. **Storage** — vectors are stored in a local ChromaDB vector database, tagged with subject and source file
 5. **Retrieval** — a user's question is embedded and matched against stored chunks via similarity search, optionally filtered by subject
 6. **Generation** — the most relevant chunks are passed to Gemini as context, with an explicit instruction to answer only from that context
@@ -42,7 +44,8 @@ pip install -r requirements.txt
 ```
 
 Create a `.env` file inside `backend/` with:
-GEMINI_KEY = your_key_here
+
+GEMINI_API_KEY=your_key_here
 
 
 Then embed your documents and start the server:
@@ -52,12 +55,17 @@ python -m uvicorn main:app --reload
 ```
 
 **Frontend:**
-Open `frontend/index.html` directly in a browser, or serve it with the VS Code Live Server extension. Update `API_URL` in `script.js` if pointing to a different backend.
+Open `frontend/index.html` directly in a browser, or serve it with the VS Code Live Server extension. Update `API_URL` and `UPLOAD_URL` in `script.js` if pointing to a different backend.
 
 ## Adding new lecture content
 
+**Option 1 — via the interface (recommended for quick additions):**
+Use the "Add lecture notes" upload form in the app itself. Note: on the free-tier deployment, uploaded content is searchable immediately but does **not** persist across server restarts — a limitation of ephemeral free-tier hosting, not the pipeline itself.
+
+**Option 2 — via script (for permanent additions):**
 1. Drop new PDFs into `documents/<subject>/` (e.g., `documents/os/os_4.pdf`)
 2. Run `python embed_and_store.py` — it automatically detects and processes only the new files
+3. Commit and push, so the updated `chroma_db` is included in the next deployment
 
 ## Project structure
 
@@ -65,8 +73,8 @@ study-desk-rag/
 ├── backend/
 │ ├── extract_text.py # PDF text extraction
 │ ├── chunking.py # Splits text into overlapping chunks
-│ ├── embed_and_store.py # Generates embeddings, stores in ChromaDB
-│ ├── main.py # FastAPI app and /ask endpoint
+│ ├── embed_and_store.py # Generates embeddings (batched), stores in ChromaDB
+│ ├── main.py # FastAPI app: /ask and /upload endpoints
 │ └── chroma_db/ # Persisted vector store
 ├── frontend/
 │ ├── index.html
@@ -76,6 +84,11 @@ study-desk-rag/
 ├── os/
 └── dbms/
 
+
+## Known limitations
+
+- Uploaded PDFs via the live `/upload` endpoint don't persist across server restarts on Render's free tier, since the filesystem resets on redeploy. A production version would use a managed vector database or persistent disk instead.
+- Chat history is stored per-browser (localStorage), not shared across devices or users.
 
 ## Author
 
