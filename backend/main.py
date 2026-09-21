@@ -4,9 +4,13 @@ from dotenv import load_dotenv
 from google import genai
 from google.genai import errors as genai_errors
 import chromadb
-from fastapi import FastAPI
+from fastapi import FastAPI, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+import shutil
+from pathlib import Path
+from extract_text import extract_text_from_pdf
+from chunking import chunk_text
 
 load_dotenv()
 api_key = os.getenv("GEMINI_API_KEY")
@@ -27,6 +31,33 @@ app.add_middleware(
 class QuestionRequest(BaseModel):
     question: str
     subject: str = "all"
+
+def process_and_store_pdf(pdf_path: str, subject: str, filename: str):
+    """Extract, chunk, embed, and store a single newly-uploaded PDF — batched."""
+    text = extract_text_from_pdf(pdf_path)
+    text_chunks = chunk_text(text)
+
+    if not text_chunks:
+        return 0
+
+    # One (or a few) API calls instead of one-per-chunk
+    embeddings = get_embeddings_batch(text_chunks)
+
+    ids = [f"{subject}_{filename}_{i}" for i in range(len(text_chunks))]
+    metadatas = [
+        {"subject": subject, "filename": filename, "chunk_id": i}
+        for i in range(len(text_chunks))
+    ]
+
+    # One database write instead of one per chunk too
+    collection.add(
+        ids=ids,
+        embeddings=embeddings,
+        documents=text_chunks,
+        metadatas=metadatas
+    )
+
+    return len(text_chunks)
 
 def call_with_retry(func, max_retries=3, base_delay=2):
     """
@@ -59,6 +90,29 @@ def get_embedding(text):
         )
         return result.embeddings[0].values
     return call_with_retry(call)
+
+def get_embeddings_batch(texts, batch_size=50):
+    """
+    Embed multiple texts in as few API calls as possible.
+    Splits into batches of `batch_size` as a safety margin against
+    any request-size limits, rather than sending everything in one call.
+    """
+    all_embeddings = []
+
+    for start in range(0, len(texts), batch_size):
+        batch = texts[start:start + batch_size]
+
+        def call():
+            result = client.models.embed_content(
+                model="gemini-embedding-001",
+                contents=batch
+            )
+            return [e.values for e in result.embeddings]
+
+        batch_embeddings = call_with_retry(call)
+        all_embeddings.extend(batch_embeddings)
+
+    return all_embeddings
 
 def search(query, top_k=3, subject="all"):
     query_embedding = get_embedding(query)
@@ -95,9 +149,34 @@ Answer:"""
 
     return call_with_retry(call)
 
-@app.get("/")
-def read_root():
-    return {"status": "Study Assistant API is running"}
+@app.post("/upload")
+async def upload_pdf(file: UploadFile = File(...), subject: str = Form(...)):
+    if not file.filename.lower().endswith(".pdf"):
+        return {"error": "Only PDF files are supported."}
+
+    if subject not in ("os", "dbms"):
+        return {"error": "Subject must be 'os' or 'dbms'."}
+
+    # Save the uploaded file temporarily so pypdf can read it
+    temp_dir = Path("temp_uploads")
+    temp_dir.mkdir(exist_ok=True)
+    temp_path = temp_dir / file.filename
+
+    with open(temp_path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+
+    try:
+        chunk_count = process_and_store_pdf(str(temp_path), subject, file.filename)
+    except Exception as e:
+        return {"error": f"Failed to process file: {str(e)}"}
+    finally:
+        temp_path.unlink(missing_ok=True)
+
+    return {
+        "message": f"Successfully processed '{file.filename}'",
+        "chunks_added": chunk_count,
+        "note": "This file is searchable now, but won't persist after the server restarts (free-tier hosting limitation)."
+    }
 
 @app.post("/ask")
 def ask_question(request: QuestionRequest):
